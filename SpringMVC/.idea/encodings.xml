@@ -11,6 +11,10 @@
     <file url="file://$PROJECT_DIR$/springmvc-04-controller/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/springmvc-05-json/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/springmvc-05-json/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/springmvc-06-ajax/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/springmvc-06-ajax/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/springmvc-07-intercepter/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/springmvc-07-intercepter/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
   </component>

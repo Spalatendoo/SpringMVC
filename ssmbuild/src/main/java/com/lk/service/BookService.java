@@ -18,4 +18,6 @@ public interface BookService {
     int updateBook(Books books);
     //查询全部书
     List<Books> queryAllBook();
+
+    Books queryBookByName(String bookName);
 }

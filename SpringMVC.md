@@ -1758,3 +1758,394 @@ public class BookServiceImpl implements BookService{
 </beans>
 ```
 
+
+
+剩下的就是编写Controller了
+
+### 书籍查询功能
+
+**Controller编写**
+
+```java
+@Controller
+@RequestMapping("book")
+public class BookController {
+    //controller 调 service层
+    @Autowired
+    @Qualifier("BookServiceImpl")
+    private BookService bookService;
+//    private BookService bookService = new BookServiceImpl();
+
+    //查询全部的书籍，并且返回到一个书籍展示页面
+    @RequestMapping("/allBook")
+    public String list(Model model){
+        List<Books> books = bookService.queryAllBook();
+        model.addAttribute("books",books);
+        return "allBook";
+    }
+}
+```
+
+
+
+**首页界面优化**
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+  <head>
+    <title>首页</title>
+    <style>
+      a{
+        text-decoration: none;
+        color: black;
+        font-size: 18px;
+      }
+      h3{
+        width: 180px;
+        height: 38px;
+        margin: 100px auto;
+        text-align: center;
+        line-height: 38px;
+        background: deepskyblue;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+  <h3>
+
+    <a href="${pageContext.request.contextPath}/book/allBook">进入书籍页面</a>
+  </h3>
+  </body>
+</html>
+```
+
+![image-20230405104614840](SpringMVC.assets/image-20230405104614840.png)
+
+
+
+**查询所有书籍界面优化**
+
+```jsp
+<html>
+<head>
+    <title>书籍展示</title>
+
+    <%--BootStrap 美化界面--%>
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <div class="page-header">
+                <h1>
+                    <small>书籍列表 ———— 显示所有书籍</small>
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>书籍编号</th>
+                        <th>书籍名称</th>
+                        <th>书籍数量</th>
+                        <th>书籍说明</th>
+                    </tr>
+                </thead>
+                <%--书籍从数据库中查询出来，从books遍历出来 foreach--%>
+                <tbody>
+                    <c:forEach var="book" items="${books}">
+                        <tr>
+                            <td>${book.bookID}</td>
+                            <td>${book.bookName}</td>
+                            <td>${book.bookCount}</td>
+                            <td>${book.detail}</td>
+                        </tr>
+                    </c:forEach>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
+```
+
+![image-20230405104539471](SpringMVC.assets/image-20230405104539471.png)
+
+
+
+==过程中遇到的报错问题==
+
++ 解决“至少有一个JAR被扫描用于TLD但尚未包含TLD”
+
+  + 1、打开Tomcat配置文件，找到conf文件夹下的catalina.properties
+
+  + 2、编辑配置文件，找到在108行，修改如下
+
+    ![image-20230405104820014](SpringMVC.assets/image-20230405104820014.png)
+
+  + 保存退出编辑，重启服务
+
++ 解决“一个或多个筛选器启动失败”
+
+  + 这个错误由于最开始创建项目时包没有导入引起
+
+    ![image-20230405105030554](SpringMVC.assets/image-20230405105030554.png)
+
+​	
+
++ bean报错
+
+  ![image-20230405105347155](SpringMVC.assets/image-20230405105347155.png)
+
+  + 排错思路
+
+    + 查看这个bean是否注入成功![image-20230405105453976](SpringMVC.assets/image-20230405105453976.png)
+
+    + Junit单元测试，看代码结果是否能跑出来![image-20230405105528048](SpringMVC.assets/image-20230405105528048.png)
+
+    + 问题：一定不在底层，是Spring出了问题————手动注入![image-20230405105840457](SpringMVC.assets/image-20230405105840457.png)
+
+    + 报错空指针异常![image-20230405105936892](SpringMVC.assets/image-20230405105936892.png)
+
+      ![image-20230405105959555](SpringMVC.assets/image-20230405105959555.png)
+
+    + SpringMVC ，整合的时候没有调用到我们的service层的bean：
+
+      1、applicationContext.xml 没有注入bean
+
+      2、web.xml中，也绑定过配置文件。~ 发现问题，配置的是sprinmvc.xml ，没有绑定其他spring配置，所以空指针
+
+​					![image-20230405110104862](SpringMVC.assets/image-20230405110104862.png)  
+
+
+
+### 添加书籍功能
+
+
+
+Controller编写
+
+```java
+//跳转到增加书籍页面
+    @RequestMapping("/toAddBook")
+    public String toADDPaper() {
+        return "addBook";
+    }
+
+
+    //添加书籍请求
+    @RequestMapping("/addBook")
+    public String addBokk(Books books) {
+        System.out.println("addBook=>" + books);
+        bookService.addBook(books);
+        return "redirect:/book/allBook"; //重定向到我们的@RequestMapping("/allBook") 请求
+    }
+```
+
+
+
+页面
+
+```jsp
+<body>
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <div class="page-header">
+                <h1>
+                    <small>新增书籍</small>
+                </h1>
+            </div>
+        </div>
+
+        <form action="${pageContext.request.contextPath}/book/addBook" method="post">
+            <div class="for-group">
+                <label for="bkname">书籍名称</label>
+                <input type="text" name="bookName" class="form-control" id="bkname" required>
+            </div>
+            <div class="for-group">
+                <label for="bkcount">书籍数量</label>
+                <input type="text" name="bookCounts" class="form-control" id="bkcount" required>
+            </div>
+            <div class="for-group">
+                <label for="bkretail">书籍描述</label>
+                <input type="text" name="detail" class="form-control" id="bkretail" required>
+            </div>
+            <div class="form-group">
+                <input type="submit"  class="form-control" value="添加">
+            </div>
+
+        </form>
+
+    </div>
+
+
+
+</div>
+```
+
+### 修改删除书籍
+
+Controller编写
+
+```java
+ //跳转到修改页面
+    @RequestMapping("/toUpdate")
+    public String toUpdatePaper(int id,Model model){
+        Books books = bookService.queryBookByID(id);
+        model.addAttribute("QBook",books);
+        return "updateBook";
+
+    }
+
+    //修改书籍
+    @RequestMapping("/updateBook")
+    public String updateBook(Books books){
+        System.out.println("updateBook=>"+ books);
+        bookService.updateBook(books);
+        return "redirect:/book/allBook";
+    }
+
+    //删除书籍
+    @RequestMapping("/deleteBook/{bookID}")
+    public String deleteBook(@PathVariable("bookID") int id){
+        bookService.deleteBookByID(id);
+        return "redirect:/book/allBook";
+
+    }
+```
+
+修改需要配置aop事务
+
+**Spring-service.xml**
+
+```xml
+<!--4 aop事务支持-->
+<!--结合AOP实现事务的注入-->
+<!--配置事务通知-->
+<tx:advice id="txAdvice" transaction-manager="transactionManager">
+    <!--给哪些方法配置事务-->
+    <!--配置事务的传播特性 new-->
+    <tx:attributes>
+        <tx:method name="*" propagation="REQUIRED"/>
+    </tx:attributes>
+</tx:advice>
+
+<!--配置事务切入-->
+<aop:config>
+    <aop:pointcut id="txPointCut" expression="execution(* com.lk.dao.*.*(..))"/>
+    <aop:advisor advice-ref="txAdvice" pointcut-ref="txPointCut"/>
+</aop:config>
+```
+
+
+
+
+
+修改页面
+
+```jsp
+        <h1>
+          <small>修改书籍</small>
+        </h1>
+      </div>
+    </div>
+
+    <form action="${pageContext.request.contextPath}/book/updateBook" method="post">
+      <%--提交了修改的SQL请求，但是修改失败，初次考虑，是事务问题，配置完毕事务，依旧失败--%>
+      <%--前端传递隐藏域--%>
+        <input type="hidden" name="bookID" value="${QBook.bookID}">
+      <div class="for-group">
+        <label for="bkname">书籍名称</label>
+        <input type="text" name="bookName" class="form-control" id="bkname" value="${QBook.bookName}" required>
+      </div>
+      <div class="for-group">
+        <label for="bkcount">书籍数量</label>
+        <input type="text" name="bookCounts" class="form-control" id="bkcount" value="${QBook.bookCounts}" required>
+      </div>
+      <div class="for-group">
+        <label for="bkretail">书籍描述</label>
+        <input type="text" name="detail" class="form-control" id="bkretail" value="${QBook.detail}" required>
+      </div>
+      <div class="for-group">
+        <input type="submit"  class="form-control" value="修改">
+      </div>
+
+    </form>
+
+  </div>
+</div>
+```
+
+
+
+### 新增搜索功能
+
+dao - service -controller 从下自上添加业务
+
+![image-20230406165738307](SpringMVC.assets/image-20230406165738307.png)
+
+![image-20230406165825484](SpringMVC.assets/image-20230406165825484.png)
+
+
+
+```java
+//查询书籍
+@RequestMapping("/queryBook")
+public String queryBook(String queryBookName,Model model){
+    Books books = bookService.queryBookByName(queryBookName);
+
+    System.err.println("books=>"+books);
+
+    List<Books> list = new ArrayList<Books>();
+    list.add(books);
+    if (books==null){
+        list = bookService.queryAllBook();
+        model.addAttribute("error","未查到");
+    }
+    model.addAttribute("list",list);
+
+    return "allBook";
+}
+```
+
+
+
+```jsp
+<div class="col-md-4 column">
+    <%--查询书籍--%>
+    <form action="${pageContext.request.contextPath}/book/queryBook" method="post" style="float: right" class="form-inline">
+        <span style="color: crimson;font-weight: bold">${error}</span>
+        <input type="text" name="queryBookName" class="form-control" placeholder="请输入要查询的书籍名称">
+        <input type="submit" value="查询" class="btn btn-primary">
+    </form>
+</div>
+```
+
+
+
+
+
+### Ajax
+
+**Asynchronous JavaScript and XML**
+
+异步无刷新请求
+
++ 传统的网页想要更新内容或者提交一个表单，都需要重新加载整个网页。
++ 使用ajax技术的网页，通过在后台服务器进行少量的数据交换，就可以实现异步局部更新
+
+
+
+
+
