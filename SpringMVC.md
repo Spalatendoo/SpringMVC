@@ -2147,5 +2147,570 @@ public String queryBook(String queryBookName,Model model){
 
 
 
+#### jQuery.ajax
 
+不需要纯原生实现Ajax，直接使用jQuery提供的。
+
+Ajax的核心是XMLHttpRequest对象（XHR）。XHR为向服务器发送请求和解析服务器响应提供了接口，能够以异步方式从服务器获取新数据
+
+通过jQuery Ajax方法，能够使用HTTP Get和HTTP Post从远程服务器上请求文本、HTML、XML或JSON，也可以把外部数据直接载入网页的被选元素中
+
+jQuery 本质就是XMLHttpRequest，对其进行了封装，方便调用
+
+
+
+```
+jQuery.ajax(...)
+      部分参数：
+            url：请求地址
+            type：请求方式，GET、POST（1.9.0之后用method）
+        headers：请求头
+            data：要发送的数据
+    contentType：即将发送信息至服务器的内容编码类型(默认: "application/x-www-form-urlencoded; charset=UTF-8")
+          async：是否异步
+        timeout：设置请求超时时间（毫秒）
+      beforeSend：发送请求前执行的函数(全局)
+        complete：完成之后执行的回调函数(全局)
+        success：成功之后执行的回调函数(全局)
+          error：失败之后执行的回调函数(全局)
+        accepts：通过请求头发送给服务器，告诉服务器当前客户端可接受的数据类型
+        dataType：将服务器端返回的数据转换成指定类型
+          "xml": 将服务器端返回的内容转换成xml格式
+          "text": 将服务器端返回的内容转换成普通文本格式
+          "html": 将服务器端返回的内容转换成普通文本格式，在插入DOM中时，如果包含JavaScript标签，则会尝试去执行。
+        "script": 尝试将返回值当作JavaScript去执行，然后再将服务器端返回的内容转换成普通文本格式
+          "json": 将服务器端返回的内容转换成相应的JavaScript对象
+        "jsonp": JSONP 格式使用 JSONP 形式调用函数时，如 "myurl?callback=?" jQuery 将自动替换 ? 为正确的函数名，以执行回调函数
+
+```
+
+
+
+
+
+==简单测试==
+
++ 配置web.xml 和 Springmvc的配置文件（applicationContext.xml）
+
+  记得配置静态资源过滤和注解驱动
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+           version="4.0">
+      <servlet>
+          <servlet-name>springmvc</servlet-name>
+          <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+          <init-param>
+              <param-name>contextConfigLocation</param-name>
+              <param-value>classpath:applicationContext.xml</param-value>
+          </init-param>
+          <load-on-startup>1</load-on-startup>
+      </servlet>
+      <servlet-mapping>
+          <servlet-name>springmvc</servlet-name>
+          <url-pattern>/</url-pattern>
+      </servlet-mapping>
+  
+      <filter>
+          <filter-name>encoding</filter-name>
+          <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+          <init-param>
+              <param-name>encoding</param-name>
+              <param-value>utf-8</param-value>
+          </init-param>
+      </filter>
+      <filter-mapping>
+          <filter-name>encoding</filter-name>
+          <url-pattern>/*</url-pattern>
+      </filter-mapping>
+  </web-app>
+  ```
+
+  
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       https://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+
+    <context:component-scan base-package="com.lk.controller"/>
+    <!--静态资源过滤-->
+    <mvc:default-servlet-handler/>
+    <mvc:annotation-driven/>
+
+
+    <!--视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" id="internalResourceViewResolver">
+
+        <property name="prefix" value="/WEB-INF/jsp/" />
+        <property name="suffix" value=".jsp"/>
+    </bean>
+</beans>
+```
+
+
+
++ 编写AjaxController
+
+```java
+@Controller
+public class AjaxController {
+    @RequestMapping("/t1")
+    public String test(){
+        return "hello";
+    }
+
+    @RequestMapping("/a1")
+    public void a1(String name, HttpServletResponse response) throws IOException {
+        System.out.println("a1:param = >"+name);
+        if ("lk".equals(name)){
+            response.getWriter().print("true");
+        }else {
+            response.getWriter().print("false");
+        }
+    }
+}
+```
+
+
+
++ 导入Jquery  可以使用在线的CDN或者下载导入
+
+  ![image-20230406195925570](SpringMVC.assets/image-20230406195925570.png)
+
++ index.jsp测试
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+  <head>
+    <title>$Title$</title>
+    <script src="${pageContext.request.contextPath}/statics/js/jquery-3.4.1.js"></script>
+    <%--js是一个很随便的语言--%>
+    <script>
+      function a(){
+        $.post({
+            url:"${pageContext.request.contextPath}/a1",
+            data:{"name":$("#username").val()},
+            success:function (data,status){
+              console.log("data=" + data);
+              console.log("status=" + status)
+            }
+                })
+
+      }
+
+    </script>
+  </head>
+  <body>
+
+  <%--失去焦点的时候，发起一个请求到后台--%>
+  用户名:<input type="text" id="username" onblur="a()">
+  </body>
+</html>
+```
+
+![image-20230406193636146](SpringMVC.assets/image-20230406193636146.png)
+
+
+
+#### SpringMVC实现
+
+实体类User
+
+```java
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+    private String name;
+    private int age;
+    private String sex;
+}
+```
+
+Controller获取一个i集合对象 
+
+```java
+@RequestMapping("/a2")
+public List<User> a2(){
+    List<User> users = new ArrayList<>();
+
+    //添加数据
+    users.add(new User("lk",21,"男"));
+    users.add(new User("yzy",20,"女"));
+    users.add(new User("hxf",23,"男"));
+
+    return users;
+}
+```
+
+
+
+前端页面
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+
+<input type="button" id="btn" value="获取数据"/>
+<table width="80%" align="center">
+  <tr>
+    <td>姓名</td>
+    <td>年龄</td>
+    <td>性别</td>
+  </tr>
+  <tbody id="content">
+  </tbody>
+</table>
+
+<script src="${pageContext.request.contextPath}/statics/js/jquery-3.4.1.js"></script>
+<script>
+
+  $(function () {
+    $("#btn").click(function () {
+      $.post("${pageContext.request.contextPath}/a2",function (data) {
+        console.log(data)
+        var html="";
+        for (var i = 0; i <data.length ; i++) {
+          html+= "<tr>" +
+                  "<td>" + data[i].name + "</td>" +
+                  "<td>" + data[i].age + "</td>" +
+                  "<td>" + data[i].sex + "</td>" +
+                  "</tr>"
+        }
+        $("#content").html(html);
+      });
+    })
+  })
+</script>
+
+
+</body>
+</html>
+```
+
+
+
+![image-20230406201903252](SpringMVC.assets/image-20230406201903252.png)
+
+
+
+
+
+#### Ajax验证用户名
+
+```java
+@RequestMapping("/a3")
+public String a3(String name , String pwd){
+    String msg = "";
+    if (name != null){
+        // admin 这些数据应该再数据库中查
+        if ("admin".equals(name)){
+            msg = "ok";
+        }else {
+            msg = "用户名有误";
+        }
+    }
+    if (pwd != null){
+        // admin 这些数据应该再数据库中查
+        if ("123456".equals(pwd)){
+            msg = "ok";
+        }else {
+            msg = "密码有误";
+        }
+    }
+    return msg;
+}
+```
+
+
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+  <script src="${pageContext.request.contextPath}/statics/js/jquery-3.4.1.js"></script>
+  <script>
+    function a1(){
+      $.post({
+        url:"${pageContext.request.contextPath}/a3",
+        data:{"name":$("#name").val()},
+        success:function (data){
+          if (data.toString()==='ok'){
+            $("#userInfo").css("color","green");
+          }else {
+            $("#userInfo").css("color","red");
+          }
+          $("#userInfo").html(data);
+          console.log(data);
+        }
+      })
+    }
+    function a2(){
+      $.post({
+        url:"${pageContext.request.contextPath}/a3",
+        data:{"pwd":$("#pwd").val()},
+        success:function (data){
+          if (data.toString()==='ok'){
+            $("#pwdInfo").css("color","green");
+          }else {
+            $("#pwdInfo").css("color","red");
+          }
+          $("#pwdInfo").html(data);
+
+
+          console.log(data);
+        }
+      })
+    }
+  </script>
+
+</head>
+<body>
+
+<p>
+  用户名: <input type="text" id="name" onblur="a1()">
+  <span id="userInfo"></span>
+</p>
+<p>
+  密码: <input type="text" id="pwd" onblur="a2()">
+  <span id="pwdInfo"></span>
+</p>
+
+</body>
+</html>
+```
+
+
+
+![image-20230406205009379](SpringMVC.assets/image-20230406205009379.png)
+
+
+
+
+
+### SpringMVC拦截器
+
+**过滤器与拦截器的区别 ：** 
+
+SpringMVC拦截器类似于Servlet开发中的过滤器Filter，用于对处理器进行预处理和后处理。拦截器是AOP思想的具体应用
+
+
+
+**过滤器**
+
++ 在Servlet中，任何java web工程都可以使用
++ 在url-pattern中配置了/*后，可以对所有要访问的资源进行拦截
+
+![image-20230406205703123](SpringMVC.assets/image-20230406205703123.png)
+
+**拦截器**
+
++ 拦截器是SpringMVC框架自己的，只有使用了SpringMVC框架的工程才能使用
++ 拦截器只会拦截访问的控制器方法，如果访问的是jsp/html/css/image/js是不会进行拦截的
+
+
+
+#### Test
+
+拦截器只需实现HandlerInterceptor，该接口方法不必须重写，一般只重写 preHandle( )，后面两个方法postHandle(),afterCompletion() 可以当作拦截日志
+
+![image-20230406211944630](SpringMVC.assets/image-20230406211944630.png)
+
+![image-20230406211951108](SpringMVC.assets/image-20230406211951108.png)
+
+Controller类 执行前只有preHandle可以拦截生效
+
+
+
+
+
+编写拦截类
+
+```java
+public class MyIntercepter implements HandlerInterceptor {
+
+    //return true ;  执行下一个拦截器，放行
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("======================处理前==================");
+        return true;
+    }
+
+    //后面两个方法可以写拦截日志
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        System.out.println("======================处理后==================");
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        System.out.println("======================清理==================");
+    }
+}
+```
+
+ 若将 preHandle( )方法 return false，即执行该拦截器，（注意这个拦截器是在Controller执行前运行生效的），不放行，那么就能实现成功拦截的效果。
+
+![image-20230406212246959](SpringMVC.assets/image-20230406212246959.png)
+
+
+
+
+
+==注意在SpringMVC配置文件下配置拦截器==
+
+```xml
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <!-- /** :包括这个请求下面的所有请求-->
+            <mvc:mapping path="/**"/>
+            <bean class="com.lk.config.MyIntercepter"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+```
+
+
+
+#### 登录判断验证
+
++ 编写Controller
+
+```java
+@Controller
+public class LoginController {
+    @RequestMapping("/main")
+    public String main(){
+        return "main";
+    }
+    @RequestMapping("/goLogin")
+    public String login(){
+        return "login";
+    }
+    @RequestMapping("/login")
+    public String login(HttpSession session,String username, String password){
+//把用户的信息存在session中
+        session.setAttribute("userLoginInfo",username);
+        return "main";
+    }
+}
+```
+
++ 首页 页面
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<h1>首页</h1>
+</body>
+</html>
+```
+
++ 登录 页面
+
+```xml
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<%-- 在web-inf下的所有页面或者资源，只能通过controller , 或者servlet进行访问--%>
+<h1>登陆页面</h1>
+
+<form action="${pageContext.request.contextPath}/login" method="post">
+  用户名: <input type="text" name="username"/>
+  密码： <input type="text" name="password"/>
+  <input type="submit" value="提交">
+</form>
+</body>
+</html>
+```
+
+
+
+
+
+![image-20230406220549512](SpringMVC.assets/image-20230406220549512.png)
+
+两个页面都能跳转成功，业务上问题就是：我登陆后才能进入首页，这里不登陆也能访问首页，是有问题的，想要的效果是 ：没登陆时点击首页 是无法进入的
+
+
+
+
+
+写一个Login拦截器的类
+
+```java
+public class LoginIntercepter implements HandlerInterceptor {
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        HttpSession session = request.getSession();
+        //放行的判断：判断什么情况下没有登录
+
+        //登录页面也会放行
+        if (request.getRequestURI().contains("login")){
+            return true;
+        }
+        //说明我在提交登录
+        if (request.getRequestURI().contains("goLogin")){
+            return true;
+        }
+        //第一次登录，也是没有Session的
+        if (session.getAttribute("userLoginInfo")!=null){
+            return true;
+        }
+
+
+        //判断什么情况下没登录
+
+        request.getRequestDispatcher("/WEB-INF/jsp/login.jsp").forward(request,response);
+
+        return false;
+    }
+}
+```
+
+
+
+首页 页面增加注销功能
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<h1>首页</h1>
+<span>${username}</span>
+
+<p>
+    <a href="${pageContext.request.contextPath}/user/goOut">注销</a>
+</p>
+</body>
+</html>
+```
 
